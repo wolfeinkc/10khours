@@ -128,11 +128,11 @@ export default function WakeLockTest() {
       <div className="mb-6">
         <h2 className="text-xl font-semibold mb-2">Instructions</h2>
         <ol className="list-decimal pl-6">
-          <li>Click "Enable Wake Lock" to start the test</li>
-          <li>Leave your device inactive (don't touch the screen)</li>
+          <li>Click &quot;Enable Wake Lock&quot; to start the test</li>
+          <li>Leave your device inactive (don&apos;t touch the screen)</li>
           <li>The screen should stay on (not timeout/lock)</li>
-          <li>If the screen stays on for your device's normal timeout period, the wake lock is working</li>
-          <li>Click "Disable Wake Lock" to end the test</li>
+          <li>If the screen stays on for your device&apos;s normal timeout period, the wake lock is working</li>
+          <li>Click &quot;Disable Wake Lock&quot; to end the test</li>
         </ol>
       </div>
       

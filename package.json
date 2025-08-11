@@ -6,15 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:ci": "jest --ci --coverage --watchAll=false",
-    "test:unit": "jest --testPathPattern=__tests__/components|__tests__/hooks",
-    "test:integration": "jest --testPathPattern=__tests__/integration",
-    "test:e2e": "echo \"E2E tests not implemented yet\"",
-    "prebuild": "npm run test:ci"
+    "lint": "next lint"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

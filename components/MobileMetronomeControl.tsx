@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { useToast } from '@/components/ui/toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label'
 import { Play, Pause, Settings, Volume2, Loader2 } from 'lucide-react'
 import useMetronome, { MetronomeSettings } from '@/hooks/useMetronome'
-import debounce from 'lodash.debounce'
+
 import useDebouncedSlider from '@/hooks/useDebouncedSlider'
 
 interface MobileMetronomeControlProps {
@@ -25,7 +25,7 @@ export default function MobileMetronomeControl({
   onSave,
   className = '' 
 }: MobileMetronomeControlProps) {
-  const { isPlaying, settings, start, stop, toggle, updateSettings } = useMetronome()
+  const { isPlaying, settings, toggle, updateSettings } = useMetronome()
   const [showSettings, setShowSettings] = useState(false)
   const { success } = useToast()
 

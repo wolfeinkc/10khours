@@ -9,7 +9,7 @@ interface DayStreakAchievementProps {
   onPracticeComplete?: () => void
 }
 
-export default function DayStreakAchievement({ onPracticeComplete: _onPracticeComplete }: DayStreakAchievementProps) {
+export default function DayStreakAchievement({ }: DayStreakAchievementProps) {
   const { user } = useAuth()
   const supabase = createClient()
   const [streak, setStreak] = useState(0)

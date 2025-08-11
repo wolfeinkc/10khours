@@ -43,15 +43,14 @@ interface MetronomeSettings {
 export default function PracticeTimer({ song, onStop, onEditSong, onSongUpdated, onPracticeCompleted }: PracticeTimerProps) {
   const { user } = useAuth()
   const supabase = createClient()
-  const { toasts, success, error, removeToast } = useToast()
+  const { toasts, success, error: toastError, removeToast } = useToast()
   const [seconds, setSeconds] = useState(0)
-  const [, setError] = useState<string | null>(null)
   const [isRunning, setIsRunning] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
   const [songNotes, setSongNotes] = useState(song.notes || '')
   const [showNotes, setShowNotes] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [isTextareaFocused, setIsTextareaFocused] = useState(false)
+  const [, setIsTextareaFocused] = useState(false)
   
   // Session tracking
   const sessionRef = useRef<PracticeSession | null>(null)
@@ -302,9 +301,9 @@ export default function PracticeTimer({ song, onStop, onEditSong, onSongUpdated,
       success('Metronome settings saved', 2000)
     } catch (err) {
       console.error('Error saving metronome settings:', err)
-      error('Failed to save metronome settings')
+      toastError('Failed to save metronome settings')
     }
-  }, [user, supabase, song, success, error])
+  }, [user, supabase, song, success, toastError])
 
   // Keyboard shortcuts
   useEffect(() => {

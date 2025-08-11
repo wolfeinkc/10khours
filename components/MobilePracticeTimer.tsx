@@ -35,10 +35,8 @@ interface PracticeSession {
 
 export default function MobilePracticeTimer({ 
   song, 
-  onStop, 
-  onEditSong,
+  onStop,
   onSongUpdated,
-  onPracticeCompleted,
   className = ''
 }: MobilePracticeTimerProps) {
   const { user } = useAuth()
@@ -50,7 +48,7 @@ export default function MobilePracticeTimer({
   const [songNotes, setSongNotes] = useState(song.notes || '')
   const [showNotes, setShowNotes] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [isTextareaFocused, setIsTextareaFocused] = useState(false)
+  const [, setIsTextareaFocused] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showControls, setShowControls] = useState(true)
   
@@ -228,7 +226,7 @@ export default function MobilePracticeTimer({
   }, [isRunning, isPaused, enableWakeLock])
 
   // Auto-save metronome settings when they change
-  const handleMetronomeSettingsSave = useCallback(async (settings: any) => {
+  const handleMetronomeSettingsSave = useCallback(async (settings: { bpm?: number; volume?: number }) => {
     if (!user || !song) return
 
     try {

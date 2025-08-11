@@ -118,9 +118,13 @@ export default function Dashboard() {
   }, [])
 
   const handleSongUpdated = useCallback((updatedSong: Song) => {
-    setSongs(prev => prev.map(song => 
-      song.id === updatedSong.id ? updatedSong : song
-    ))
+    setSongs(prev => {
+      const updated = prev.map(song => 
+        song.id === updatedSong.id ? updatedSong : song
+      )
+      // Sort by position to maintain correct order after updates
+      return updated.sort((a, b) => a.position - b.position)
+    })
     
     // Update selected song if it's the same song being edited
     if (selectedSong?.id === updatedSong.id) {
@@ -362,45 +366,6 @@ export default function Dashboard() {
 
             {/* Mobile-First Action Bar with Touch Interactions */}
             <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
-              {/* Enhanced Organize Toggle with Mobile Instructions */}
-              <div className="w-full sm:w-auto">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setViewMode(viewMode === 'standard' ? 'dragdrop' : 'standard')}
-                  className="w-full sm:w-auto h-11 sm:h-10 justify-center sm:justify-start touch-manipulation active:scale-95 transition-transform" // Enhanced touch feedback
-                >
-                  {viewMode === 'standard' ? (
-                    <>
-                      <Move className="h-4 w-4 mr-2" />
-                      <span className="sm:hidden">Organize Library</span>
-                      <span className="hidden sm:inline">Organize Songs & Folders</span>
-                    </>
-                  ) : (
-                    <>
-                      <Grid3X3 className="h-4 w-4 mr-2" />
-                      <span className="sm:hidden">Done</span>
-                      <span className="hidden sm:inline">Done Organizing</span>
-                    </>
-                  )}
-                </Button>
-                
-                {/* Mobile Rearrange Instructions */}
-                {viewMode === 'dragdrop' && (
-                  <div className="mt-2 sm:hidden">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-                      <div className="flex items-center space-x-2">
-                        <Move className="h-4 w-4 flex-shrink-0" />
-                        <span className="font-medium">Touch & drag the handles to move items</span>
-                      </div>
-                      <p className="mt-1 text-blue-700 text-xs">
-                        Tap and hold the ⋮⋮ handle, then drag to rearrange songs and folders
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
               {/* Enhanced Action Buttons with Touch Feedback */}
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                 <Button 
@@ -423,6 +388,33 @@ export default function Dashboard() {
                 </Button>
               </div>
             </div>
+
+            <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    if (viewMode === 'dragdrop') {
+                      // Refresh data when exiting organize mode to show new order
+                      await fetchData()
+                    }
+                    setViewMode(viewMode === 'standard' ? 'dragdrop' : 'standard')
+                  }}
+                  className="w-full sm:w-auto h-11 sm:h-10 justify-center sm:justify-start touch-manipulation active:scale-95 transition-transform" // Enhanced touch feedback
+                >
+                  {viewMode === 'standard' ? (
+                    <>
+                      <Move className="h-4 w-4 mr-2" />
+                      <span className="sm:hidden">Organize Library</span>
+                      <span className="hidden sm:inline">Organize Songs & Folders</span>
+                    </>
+                  ) : (
+                    <>
+                      <Grid3X3 className="h-4 w-4 mr-2" />
+                      <span className="sm:hidden">Done</span>
+                      <span className="hidden sm:inline">Done Organizing</span>
+                    </>
+                  )}
+                </Button>
 
             {/* Conditional Rendering Based on View Mode */}
             {viewMode === 'standard' ? (
@@ -532,7 +524,7 @@ export default function Dashboard() {
               </>
             ) : (
               <>
-                {/* Drag & Drop Organize View */}
+                {/* Drag and Drop View */}
                 <DragDropLibrary
                   songs={songs}
                   folders={folders}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   DndContext,
   DragEndEvent,
@@ -84,10 +84,10 @@ export default function DragDropLibrary({
   )
 
   // Update local state when props change
-  useState(() => {
+  useEffect(() => {
     setLocalSongs(songs)
     setLocalFolders(folders)
-  })
+  }, [songs, folders])
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string)
@@ -96,91 +96,132 @@ export default function DragDropLibrary({
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event
     if (!over) return
-
-    const activeId = active.id as string
-    const overId = over.id as string
-
-    if (activeId === overId) return
-
-    // Handle moving songs between folders or reordering
-    const activeSong = localSongs.find(song => song.id === activeId)
-    const overSong = localSongs.find(song => song.id === overId)
-    const overFolder = localFolders.find(folder => folder.id === overId)
-
-    if (activeSong) {
-      if (overFolder) {
-        // Moving song to folder
-        setLocalSongs(prev => prev.map(song => 
-          song.id === activeId 
-            ? { ...song, folder_id: overFolder.id }
-            : song
-        ))
-      } else if (overSong) {
-        // Reordering songs
-        const activeIndex = localSongs.findIndex(song => song.id === activeId)
-        const overIndex = localSongs.findIndex(song => song.id === overId)
-        
-        if (activeIndex !== overIndex) {
-          setLocalSongs(prev => arrayMove(prev, activeIndex, overIndex))
-        }
-      }
-    }
+    
+    // Don't update state during drag over - this interferes with drag operations
+    // All state updates will happen in handleDragEnd
   }
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
     setActiveId(null)
 
-    if (!over || !user) return
+    if (!over || !user) {
+      return
+    }
 
     const activeId = active.id as string
     const overId = over.id as string
 
-    if (activeId === overId) return
-
+    if (activeId === overId) {
+      return
+    }
+    
     try {
       const activeSong = localSongs.find(song => song.id === activeId)
       const activeFolder = localFolders.find(folder => folder.id === activeId)
+      const overSong = localSongs.find(song => song.id === overId)
+      const overFolder = localFolders.find(folder => folder.id === overId)
 
-      if (activeSong) {
-        // Update song position and folder
-        const newPosition = localSongs.findIndex(song => song.id === activeId)
-        const overFolder = localFolders.find(folder => folder.id === overId)
+      if (activeSong && overSong && activeSong.id !== overSong.id) {
+        console.log('Reordering songs:', activeSong.title, 'over', overSong.title)
         
+        // Get the current order of songs in the same context (folder or main list)
+        const contextSongs = localSongs.filter(song => 
+          song.folder_id === activeSong.folder_id
+        ).sort((a, b) => a.position - b.position)
+        
+        const activeIndex = contextSongs.findIndex(song => song.id === activeId)
+        const overIndex = contextSongs.findIndex(song => song.id === overId)
+        
+        console.log('Reorder indices:', { activeIndex, overIndex })
+        
+        if (activeIndex !== -1 && overIndex !== -1 && activeIndex !== overIndex) {
+          // Reorder the songs array
+          const reorderedSongs = arrayMove(contextSongs, activeIndex, overIndex)
+          
+          // Update positions in database
+          console.log('Updating song positions in database...')
+          for (let i = 0; i < reorderedSongs.length; i++) {
+            const song = reorderedSongs[i]
+            const { error } = await supabase
+              .from('songs')
+              .update({ position: i })
+              .eq('id', song.id)
+            
+            if (error) {
+              console.error('Error updating song position:', error)
+              throw error
+            }
+            console.log(`Updated ${song.title} to position ${i}`)
+          }
+          
+          console.log('Successfully updated all song positions!')
+          
+          // Update local state with new order
+          const updatedLocalSongs = localSongs.map(song => {
+            const reorderedSong = reorderedSongs.find(rs => rs.id === song.id)
+            if (reorderedSong) {
+              return { ...song, position: reorderedSongs.indexOf(reorderedSong) }
+            }
+            return song
+          })
+          
+          setLocalSongs(updatedLocalSongs)
+          
+          // Notify parent components
+          reorderedSongs.forEach(song => {
+            onSongUpdated({ ...song, position: reorderedSongs.indexOf(song) })
+          })
+        }
+      } else if (activeSong && overFolder) {
+        console.log('Moving song to folder:', activeSong.title, 'to', overFolder.name)
+        
+        // Move song to folder
         const { data, error } = await supabase
           .from('songs')
-          .update({
-            position: newPosition,
-            folder_id: overFolder ? overFolder.id : activeSong.folder_id
-          })
+          .update({ folder_id: overFolder.id })
           .eq('id', activeId)
           .select()
           .single()
 
         if (error) throw error
+        
+        setLocalSongs(prev => prev.map(song => 
+          song.id === activeId ? data : song
+        ))
         onSongUpdated(data)
-      } else if (activeFolder) {
-        // Update folder position
+        
+        console.log('Successfully moved song to folder!')
+      } else if (activeFolder && overFolder && activeFolder.id !== overFolder.id) {
+        console.log('Reordering folders:', activeFolder.name, 'over', overFolder.name)
+        
         const activeIndex = localFolders.findIndex(folder => folder.id === activeId)
         const overIndex = localFolders.findIndex(folder => folder.id === overId)
         
-        if (activeIndex !== overIndex) {
-          const newFolders = arrayMove(localFolders, activeIndex, overIndex)
-          setLocalFolders(newFolders)
+        if (activeIndex !== -1 && overIndex !== -1 && activeIndex !== overIndex) {
+          const reorderedFolders = arrayMove(localFolders, activeIndex, overIndex)
           
           // Update positions in database
-          const updates = newFolders.map((folder, index) => ({
-            id: folder.id,
-            position: index
-          }))
-
-          for (const update of updates) {
-            await supabase
+          console.log('Updating folder positions in database...')
+          for (let i = 0; i < reorderedFolders.length; i++) {
+            const folder = reorderedFolders[i]
+            const { error } = await supabase
               .from('folders')
-              .update({ position: update.position })
-              .eq('id', update.id)
+              .update({ position: i })
+              .eq('id', folder.id)
+            
+            if (error) {
+              console.error('Error updating folder position:', error)
+              throw error
+            }
+            console.log(`Updated ${folder.name} to position ${i}`)
           }
+          
+          setLocalFolders(reorderedFolders)
+          console.log('Successfully updated all folder positions!')
         }
+      } else {
+        console.log('No valid reorder operation detected')
       }
     } catch (error) {
       console.error('Error updating positions:', error)
@@ -220,6 +261,9 @@ export default function DragDropLibrary({
               </p>
               <p className="sm:hidden">
                 • <strong>Drag</strong> to reorder or move songs into folders
+              </p>
+              <p className="sm:hidden">
+                • <strong>Click</strong> the Done button to save your changes
               </p>
               <p className="hidden sm:block">
                 Drag and drop to reorganize your songs and folders. Drop songs onto folders to organize them.
